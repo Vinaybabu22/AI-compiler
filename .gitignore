@@ -1,0 +1,5 @@
+venv
+.env
+code_analysis_report.md
+compilers
+app/__pycache__

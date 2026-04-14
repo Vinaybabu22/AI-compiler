@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>AI Multi-Compiler</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <nav>
+        <div class="nav-container">
+            <a href="/">AI Compiler</a>
+            <div>
+                {% if current_user.is_authenticated %}
+                    <span>Welcome, {{ current_user.username }}</span>
+                    <a href="{{ url_for('auth.logout') }}">Logout</a>
+                    <a href="{{url_for('compiler.history')}}">History</a>
+                {% else %}
+                    <a href="{{ url_for('auth.login') }}">Login</a>
+                    <a href="{{ url_for('auth.register') }}">Register</a>
+                {% endif %}
+            </div>
+        </div>
+    </nav>
+    <div class="main-content">
+        {% block content %}{% endblock %}
+    </div>
+</body>
+</html>
