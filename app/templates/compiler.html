@@ -1,5 +1,54 @@
 {% extends "base.html" %}
 {% block content %}
+
+<!-- CodeMirror CSS -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.css">
+
+<!-- CodeMirror JS -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/python/python.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/clike/clike.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/edit/closebrackets.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/edit/matchbrackets.min.js"></script>
+
+<style>
+    /* Custom Two-Color Theme (White code, Yellow keywords) */
+    .cm-s-custom.CodeMirror {
+        height: 400px;
+        font-family: 'Courier New', Courier, monospace;
+        font-size: 16px;
+        border-radius: 4px;
+        text-align: left;
+        background-color: #1e293b;
+        color: white !important;
+        /* All regular code is white */
+        border: 1px solid #38bdf8;
+        margin-top: 10px;
+        margin-bottom: 15px;
+    }
+
+    .cm-s-custom .CodeMirror-gutters {
+        background-color: #0f172a;
+        border-right: 1px solid #38bdf8;
+    }
+
+    .cm-s-custom .CodeMirror-linenumber {
+        color: #94a3b8;
+    }
+
+    /* Make sure all spans default to white */
+    .cm-s-custom span[class^="cm-"] {
+        color: white !important;
+    }
+
+    /* Override only keywords and builtins to be yellow */
+    .cm-s-custom span.cm-keyword,
+    .cm-s-custom span.cm-builtin,
+    .cm-s-custom span.cm-def {
+        color: yellow !important;
+    }
+</style>
+
 <div class="compiler-container" style="padding: 20px; color: white; background: #0f172a;">
     <h2>Welcome, {{ current_user.username }}</h2>
     <select id="language" style="margin-bottom: 10px; padding: 5px;">
@@ -7,12 +56,15 @@
         <option value="c">C</option>
         <option value="java">Java</option>
     </select>
-    
-    <textarea id="code" style="width: 100%; height: 300px; background: #1e293b; color: #38bdf8; font-family: monospace; padding: 10px;">{{saved_code}}</textarea>
-    
+
+    <textarea id="code" style="display: none;">{{saved_code}}</textarea>
+
     <div style="margin-top: 10px;">
-        <button onclick="runCode()" style="background: #38bdf8; padding: 10px 20px; border: none; cursor: pointer;">Run & Explain</button>
-        <button onclick="saveCode()" style="background: #4ade80; padding: 10px 20px; border: none; cursor: pointer; margin-left: 10px;">Save Code</button>
+        <button onclick="runCode()" style="background: #38bdf8; padding: 10px 20px; border: none; cursor: pointer;">Run
+            & Explain</button>
+        <button onclick="saveCode()"
+            style="background: #4ade80; padding: 10px 20px; border: none; cursor: pointer; margin-left: 10px;">Save
+            Code</button>
     </div>
 
     <div style="display: flex; gap: 20px; margin-top: 20px;">
@@ -28,35 +80,63 @@
 </div>
 
 <script>
-async function runCode() {
-    const code = document.getElementById('code').value;
-    const language = document.getElementById('language').value;
-    document.getElementById('output').innerText = "Running...";
-    
-    const res = await fetch('/run', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({code, language})
-    });
-    const data = await res.json();
-    document.getElementById('output').innerText = data.output;
-    document.getElementById('ai_help').innerText = data.ai_help;
-}
+    let editor;
+    document.addEventListener("DOMContentLoaded", function () {
+        // Initialize CodeMirror with our custom theme
+        const langSelect = document.getElementById('language');
 
-async function saveCode() {
-    const code = document.getElementById('code').value;
-    const language = document.getElementById('language').value;
-    const filename = prompt("Enter filename:", "project_code");
-    
-    if (filename) {
-        const res = await fetch('/save', {
+        function getMode(lang) {
+            if (lang === 'c') return 'text/x-csrc';
+            if (lang === 'java') return 'text/x-java';
+            return 'python'; // default
+        }
+
+        editor = CodeMirror.fromTextArea(document.getElementById('code'), {
+            mode: getMode(langSelect.value),
+            theme: "custom", // Uses our CSS classes defined above
+            lineNumbers: true,
+            autoCloseBrackets: true,
+            matchBrackets: true,
+            indentUnit: 4,
+            smartIndent: true,
+            tabSize: 4,
+            indentWithTabs: false
+        });
+
+        langSelect.addEventListener('change', function () {
+            editor.setOption('mode', getMode(this.value));
+        });
+    });
+
+    async function runCode() {
+        const code = editor.getValue();
+        const language = document.getElementById('language').value;
+        document.getElementById('output').innerText = "Running...";
+
+        const res = await fetch('/run', {
             method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({code, language, filename})
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ code, language })
         });
         const data = await res.json();
-        alert(data.message);
+        document.getElementById('output').innerText = data.output;
+        document.getElementById('ai_help').innerText = data.ai_help;
     }
-}
+
+    async function saveCode() {
+        const code = editor.getValue();
+        const language = document.getElementById('language').value;
+        const filename = prompt("Enter filename:", "project_code");
+
+        if (filename) {
+            const res = await fetch('/save', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ code, language, filename })
+            });
+            const data = await res.json();
+            alert(data.message);
+        }
+    }
 </script>
 {% endblock %}
