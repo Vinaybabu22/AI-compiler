@@ -1,12 +1,24 @@
 {% extends "base.html" %}
 {% block content %}
+<div class="auth-shell">
 <div class="auth-box">
-    <h2>Create MCA Account</h2>
+    <h2>Join <span>AI Compiler</span></h2>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for cat, msg in messages %}
+            <div class="flash-msg {{ cat }}">{{ msg }}</div>
+        {% endfor %}
+    {% endwith %}
+
     <form method="POST">
-        <input type="text" name="username" placeholder="Username" required>
-        <input type="password" name="password" placeholder="Password" required>
-        <button type="submit">Sign Up</button>
+        <input class="auth-input" type="text"     name="username" placeholder="Choose a username" required autofocus>
+        <input class="auth-input" type="password" name="password" placeholder="Create a password" required>
+        <button type="submit" class="auth-btn">Create Account</button>
     </form>
-    <p>Already have an account? <a href="{{ url_for('auth.login') }}">Login here</a></p>
+
+    <div class="auth-footer">
+        Already have an account? <a href="{{ url_for('auth.login') }}">Sign in</a>
+    </div>
+</div>
 </div>
 {% endblock %}

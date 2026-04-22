@@ -1,5 +1,5 @@
 from flask import Blueprint, render_template, redirect, url_for, request, flash
-from flask_login import login_user, logout_user, login_required
+from flask_login import login_user, logout_user, login_required, current_user
 from flask_bcrypt import Bcrypt
 from .models import User
 from . import db, login_manager
@@ -62,3 +62,33 @@ def login():
 def logout():
     logout_user()
     return redirect(url_for('auth.login'))
+
+# --- PROFILE ROUTE ---
+@auth.route('/profile')
+@login_required
+def profile():
+    from .models import CodeHistory
+    from datetime import datetime, timedelta
+    from collections import Counter
+    codes = CodeHistory.query.filter_by(user_id=current_user.id).order_by(CodeHistory.timestamp.desc()).all()
+
+    total_saved  = len(codes)
+    lang_set     = list(set(c.language for c in codes))
+    langs_used   = len(lang_set)
+
+    week_ago     = datetime.utcnow() - timedelta(days=7)
+    recent_count = sum(1 for c in codes if c.timestamp >= week_ago)
+    recent_codes = codes[:5]
+
+    # Count per language for breakdown bars
+    lang_counts  = dict(Counter(c.language for c in codes))
+
+    return render_template(
+        'profile.html',
+        total_saved   = total_saved,
+        langs_used    = langs_used,
+        recent_count  = recent_count,
+        language_list = lang_set,
+        recent_codes  = recent_codes,
+        lang_counts   = lang_counts,
+    )

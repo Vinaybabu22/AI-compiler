@@ -1,0 +1,190 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="profile-shell">
+<div class="profile-container">
+
+    <!-- ── HERO CARD ─────────────────────────────── -->
+    <div class="profile-card">
+        <div class="profile-hero">
+            <div class="profile-avatar">{{ current_user.username[0] | upper }}</div>
+            <div class="profile-info">
+                <h1>{{ current_user.username }}</h1>
+                <p>Member · AI Compiler</p>
+            </div>
+            <a href="{{ url_for('compiler.index') }}" class="profile-action-btn" style="margin-left:auto;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M5 3l14 9-14 9V3z"/></svg>
+                Open Editor
+            </a>
+        </div>
+
+        <!-- Stats row -->
+        <div class="stats-row">
+            <div class="stat-box">
+                <div class="stat-value">{{ total_saved }}</div>
+                <div class="stat-label">Saved Files</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-value">{{ langs_used }}</div>
+                <div class="stat-label">Languages</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-value">{{ recent_count }}</div>
+                <div class="stat-label">This Week</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── LANGUAGES USED ─────────────────────────── -->
+    <div class="profile-card">
+        <div class="section-title">Languages Used</div>
+        {% if language_list %}
+            <div class="lang-chips">
+                {% for lang in language_list %}
+                    <span class="lang-chip {{ lang }}">
+                        {% if lang == 'python' %}🐍{% elif lang == 'c' %}⚡{% elif lang == 'java' %}☕{% else %}🔧{% endif %}
+                        {{ lang | capitalize }}
+                    </span>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p class="profile-empty-note">No code saved yet. Head to the editor and save your first snippet!</p>
+        {% endif %}
+    </div>
+
+    <!-- ── ACTIVITY (language breakdown bar) ─────── -->
+    {% if language_list and total_saved > 0 %}
+    <div class="profile-card">
+        <div class="section-title">Language Breakdown</div>
+        <div class="breakdown-list">
+            {% for lang, count in lang_counts.items() %}
+            <div class="breakdown-row">
+                <span class="breakdown-label lang-chip {{ lang }}" style="padding:2px 10px;font-size:11px;">{{ lang }}</span>
+                <div class="breakdown-bar-wrap">
+                    <div class="breakdown-bar {{ lang }}" style="width: {{ (count / total_saved * 100) | int }}%;"></div>
+                </div>
+                <span class="breakdown-count">{{ count }} file{{ 's' if count != 1 }}</span>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- ── RECENT SAVES ───────────────────────────── -->
+    <div class="profile-card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+            <div class="section-title" style="margin-bottom:0;">Recent Saves</div>
+            {% if total_saved > 0 %}
+            <a href="{{ url_for('compiler.history') }}" style="font-size:12px;color:var(--violet);text-decoration:none;">View all →</a>
+            {% endif %}
+        </div>
+
+        {% if recent_codes %}
+            <div class="recent-list">
+                {% for code in recent_codes %}
+                <a href="/?load={{ code.id }}" class="recent-item">
+                    <div style="display:flex;align-items:center;gap:10px;">
+                        <div class="recent-icon">
+                            {% if code.language == 'python' %}🐍{% elif code.language == 'c' %}⚡{% elif code.language == 'java' %}☕{% else %}📄{% endif %}
+                        </div>
+                        <div>
+                            <div class="recent-filename">{{ code.filename }}</div>
+                            <div class="recent-meta">{{ code.timestamp.strftime('%b %d, %Y  ·  %H:%M') }}</div>
+                        </div>
+                    </div>
+                    <span class="recent-badge {{ code.language }}">{{ code.language }}</span>
+                </a>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p class="profile-empty-note">Nothing saved yet. Write some code and hit <strong>Save</strong> in the editor.</p>
+        {% endif %}
+    </div>
+
+    <!-- ── ACCOUNT SETTINGS ───────────────────────── -->
+    <div class="profile-card">
+        <div class="section-title">Account</div>
+        <div class="account-row">
+            <div class="account-row-label">Username</div>
+            <div class="account-row-value">{{ current_user.username }}</div>
+        </div>
+        <div class="account-row">
+            <div class="account-row-label">Account ID</div>
+            <div class="account-row-value" style="font-family:'JetBrains Mono',monospace;font-size:12px;">#{{ current_user.id }}</div>
+        </div>
+        <div class="account-row" style="border:none;">
+            <div class="account-row-label">Member since</div>
+            <div class="account-row-value">AI Compiler</div>
+        </div>
+        <div style="margin-top:16px;">
+            <a href="{{ url_for('auth.logout') }}" class="logout-btn">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h6a2 2 0 012 2v1"/></svg>
+                Sign Out
+            </a>
+        </div>
+    </div>
+
+</div>
+</div>
+
+<style>
+/* ── Profile page extras ── */
+.profile-action-btn {
+    display: flex; align-items: center; gap: 6px;
+    background: var(--violet); color: #fff;
+    padding: 7px 16px; border-radius: var(--radius-sm);
+    font-size: 13px; font-weight: 600; text-decoration: none;
+    transition: background 0.15s, transform 0.1s;
+    white-space: nowrap;
+}
+.profile-action-btn:hover { background: #7c3aed; transform: translateY(-1px); }
+
+.profile-empty-note {
+    font-size: 13px; color: var(--text-3);
+    padding: 12px 0; margin: 0;
+}
+
+/* Breakdown bars */
+.breakdown-list { display: flex; flex-direction: column; gap: 12px; }
+.breakdown-row  { display: flex; align-items: center; gap: 12px; }
+.breakdown-label { flex-shrink: 0; min-width: 70px; text-align: center; }
+.breakdown-bar-wrap {
+    flex: 1; height: 6px; background: var(--surface-3);
+    border-radius: 3px; overflow: hidden;
+}
+.breakdown-bar {
+    height: 100%; border-radius: 3px;
+    transition: width 0.8s ease;
+}
+.breakdown-bar.python { background: var(--cyan); }
+.breakdown-bar.c      { background: var(--amber); }
+.breakdown-bar.java   { background: var(--red); }
+.breakdown-bar.other  { background: var(--violet); }
+.breakdown-count { font-size: 12px; color: var(--text-3); min-width: 56px; text-align: right; font-family: 'JetBrains Mono', monospace; }
+
+/* Recent item icon */
+.recent-icon { font-size: 18px; flex-shrink: 0; }
+.recent-badge.python { background:rgba(56,189,248,0.12); color:var(--cyan); border-color:rgba(56,189,248,0.3); }
+.recent-badge.c      { background:rgba(251,191,36,0.12); color:var(--amber); border-color:rgba(251,191,36,0.3); }
+.recent-badge.java   { background:rgba(248,113,113,0.12); color:var(--red); border-color:rgba(248,113,113,0.3); }
+
+/* Account rows */
+.account-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 11px 0; border-bottom: 1px solid var(--border);
+}
+.account-row-label { font-size: 13px; color: var(--text-3); }
+.account-row-value { font-size: 13px; color: var(--text-1); font-weight: 500; }
+
+/* Logout btn */
+.logout-btn {
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 7px 16px; border-radius: var(--radius-sm);
+    font-size: 13px; font-weight: 500; color: var(--red);
+    border: 1px solid rgba(248,113,113,0.3);
+    background: rgba(248,113,113,0.06);
+    text-decoration: none;
+    transition: background 0.15s;
+}
+.logout-btn:hover { background: rgba(248,113,113,0.14); }
+</style>
+{% endblock %}

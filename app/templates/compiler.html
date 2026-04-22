@@ -1,142 +1,217 @@
 {% extends "base.html" %}
 {% block content %}
 
-<!-- CodeMirror CSS -->
+<!-- CodeMirror -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.css">
-
-<!-- CodeMirror JS -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/python/python.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/clike/clike.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/edit/closebrackets.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/edit/matchbrackets.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/display/activeline.min.js"></script>
 
 <style>
-    /* Custom Two-Color Theme (White code, Yellow keywords) */
-    .cm-s-custom.CodeMirror {
-        height: 400px;
-        font-family: 'Courier New', Courier, monospace;
-        font-size: 16px;
-        border-radius: 4px;
-        text-align: left;
-        background-color: #1e293b;
-        color: white !important;
-        /* All regular code is white */
-        border: 1px solid #38bdf8;
-        margin-top: 10px;
-        margin-bottom: 15px;
-    }
-
-    .cm-s-custom .CodeMirror-gutters {
-        background-color: #0f172a;
-        border-right: 1px solid #38bdf8;
-    }
-
-    .cm-s-custom .CodeMirror-linenumber {
-        color: #94a3b8;
-    }
-
-    /* Make sure all spans default to white */
-    .cm-s-custom span[class^="cm-"] {
-        color: white !important;
-    }
-
-    /* Override only keywords and builtins to be yellow */
-    .cm-s-custom span.cm-keyword,
-    .cm-s-custom span.cm-builtin,
-    .cm-s-custom span.cm-def {
-        color: yellow !important;
-    }
+/* Force CodeMirror to fill the editor pane fully */
+.editor-pane .CodeMirror,
+.editor-pane .CodeMirror-scroll { height: 100% !important; }
 </style>
 
-<div class="compiler-container" style="padding: 20px; color: white; background: #0f172a;">
-    <h2>Welcome, {{ current_user.username }}</h2>
-    <select id="language" style="margin-bottom: 10px; padding: 5px;">
-        <option value="python">Python</option>
-        <option value="c">C</option>
-        <option value="java">Java</option>
-    </select>
+<div class="ide-shell">
 
-    <textarea id="code" style="display: none;">{{saved_code}}</textarea>
+    <!-- Sub-toolbar -->
+    <div class="ide-topbar">
+        <!-- Language badge -->
+        <select id="language" class="lang-select">
+            <option value="python">Python</option>
+            <option value="c">C</option>
+            <option value="java">Java</option>
+        </select>
 
-    <div style="margin-top: 10px;">
-        <button onclick="runCode()" style="background: #38bdf8; padding: 10px 20px; border: none; cursor: pointer;">Run
-            & Explain</button>
-        <button onclick="saveCode()"
-            style="background: #4ade80; padding: 10px 20px; border: none; cursor: pointer; margin-left: 10px;">Save
-            Code</button>
+        <button id="runBtn" class="btn-run" onclick="runCode()">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M5 3l14 9-14 9V3z"/></svg>
+            Run &amp; Explain
+        </button>
+
+        <button class="btn-save" onclick="saveCode()">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+            Save
+        </button>
+
+        <span id="cursorBadge" class="cursor-badge">NORMAL</span>
     </div>
 
-    <div style="display: flex; gap: 20px; margin-top: 20px;">
-        <div style="flex: 1; background: #1e293b; padding: 15px;">
-            <h3>Output</h3>
-            <pre id="output" style="white-space: pre-wrap;"></pre>
+    <!-- Body -->
+    <div class="ide-body">
+
+        <!-- Left workspace -->
+        <div class="workspace">
+
+            <!-- Editor pane -->
+            <div class="editor-pane">
+                <div class="pane-header">
+                    <div class="pane-dot" style="background:#7c3aed;box-shadow:0 0 5px #7c3aed;"></div>
+                    <span class="pane-title">editor</span>
+                    <span class="pane-title" style="margin-left:auto;color:#3f4f6a;" id="langLabel">python</span>
+                </div>
+                <textarea id="code" style="display:none;">{{saved_code}}</textarea>
+            </div>
+
+            <!-- Bottom: Input | Output -->
+            <div class="bottom-row">
+
+                <div class="io-pane">
+                    <div class="pane-header">
+                        <div class="pane-dot" style="background:#7c3aed;"></div>
+                        <span class="pane-title">Input</span>
+                    </div>
+                    <div class="io-body">
+                        <textarea id="stdin" placeholder="Type program input here…&#10;(values for input() / scanf / Scanner)"></textarea>
+                    </div>
+                </div>
+
+                <div class="io-pane">
+                    <div class="pane-header">
+                        <div class="pane-dot" style="background:#34d399;"></div>
+                        <span class="pane-title">Output</span>
+                    </div>
+                    <div class="io-body">
+                        <pre id="output" style="color:#3f4f6a;">Run your code to see output…</pre>
+                    </div>
+                </div>
+
+            </div>
+        </div><!-- workspace -->
+
+        <!-- AI Sidebar -->
+        <div class="ai-sidebar">
+            <div class="ai-sidebar-header">
+                <div class="ai-pulse"></div>
+                <span class="pane-title" style="color:#7c3aed;">ai assistant</span>
+            </div>
+            <div class="ai-sidebar-body">
+                <div id="ai_help">
+                    <div class="ai-empty">
+                        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" stroke-width="1.2">
+                            <path d="M12 2a5 5 0 015 5c0 2.76-2.24 5-5 5S7 9.76 7 7a5 5 0 015-5z"/>
+                            <path d="M3 21c0-4.42 4.03-8 9-8s9 3.58 9 8"/>
+                        </svg>
+                        <p style="font-size:12px;line-height:1.6;">Run your code to get AI analysis, time complexity, and fix suggestions.</p>
+                    </div>
+                </div>
+            </div>
         </div>
-        <div style="flex: 1; background: #1e293b; padding: 15px;">
-            <h3>AI ASSISTANT</h3>
-            <div id="ai_help"></div>
-        </div>
+
     </div>
 </div>
 
 <script>
-    let editor;
-    document.addEventListener("DOMContentLoaded", function () {
-        // Initialize CodeMirror with our custom theme
-        const langSelect = document.getElementById('language');
+let editor;
+let insertMode = false;
 
-        function getMode(lang) {
-            if (lang === 'c') return 'text/x-csrc';
-            if (lang === 'java') return 'text/x-java';
-            return 'python'; // default
-        }
+document.addEventListener("DOMContentLoaded", function () {
+    const langSelect = document.getElementById('language');
+    const langLabel  = document.getElementById('langLabel');
 
-        editor = CodeMirror.fromTextArea(document.getElementById('code'), {
-            mode: getMode(langSelect.value),
-            theme: "custom", // Uses our CSS classes defined above
-            lineNumbers: true,
-            autoCloseBrackets: true,
-            matchBrackets: true,
-            indentUnit: 4,
-            smartIndent: true,
-            tabSize: 4,
-            indentWithTabs: false
-        });
+    function getMode(lang) {
+        if (lang === 'c')    return 'text/x-csrc';
+        if (lang === 'java') return 'text/x-java';
+        return 'python';
+    }
 
-        langSelect.addEventListener('change', function () {
-            editor.setOption('mode', getMode(this.value));
-        });
+    editor = CodeMirror.fromTextArea(document.getElementById('code'), {
+        mode:               getMode(langSelect.value),
+        theme:              "neural",
+        lineNumbers:        true,
+        autoCloseBrackets:  true,
+        matchBrackets:      true,
+        indentUnit:         4,
+        smartIndent:        true,
+        tabSize:            4,
+        indentWithTabs:     false,
+        cursorBlinkRate:    500,
+        styleActiveLine:    true,
+        lineWrapping:       false
     });
 
-    async function runCode() {
-        const code = editor.getValue();
-        const language = document.getElementById('language').value;
-        document.getElementById('output').innerText = "Running...";
+    editor.setSize("100%", "100%");
 
-        const res = await fetch('/run', {
-            method: 'POST',
+    langSelect.addEventListener('change', function () {
+        const lang = this.value;
+        editor.setOption('mode', getMode(lang));
+        langLabel.textContent = lang;
+    });
+
+    /* Insert key: toggle cursor mode */
+    editor.on('keydown', function (cm, e) {
+        if (e.key === 'Insert') {
+            insertMode = !insertMode;
+            const wrap  = editor.getWrapperElement();
+            const badge = document.getElementById('cursorBadge');
+            wrap.classList.toggle('insert-mode', insertMode);
+            badge.textContent = insertMode ? 'INSERT' : 'NORMAL';
+            badge.classList.toggle('insert', insertMode);
+            e.preventDefault();
+        }
+    });
+
+    editor.focus();
+});
+
+/* ── Run ── */
+async function runCode() {
+    const code     = editor.getValue();
+    const language = document.getElementById('language').value;
+    const stdin    = document.getElementById('stdin').value;
+
+    const runBtn = document.getElementById('runBtn');
+    runBtn.disabled  = true;
+    runBtn.innerHTML = '<span class="spinner"></span>Running…';
+
+    const outEl = document.getElementById('output');
+    const aiEl  = document.getElementById('ai_help');
+
+    outEl.style.color  = '#3f4f6a';
+    outEl.textContent  = '';
+    outEl.className    = '';
+    aiEl.innerHTML     = '<div style="color:#475569;font-size:13px;padding:4px 0;"><span class="spinner"></span>Analyzing…</div>';
+
+    try {
+        const res  = await fetch('/run', {
+            method:  'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ code, language })
+            body:    JSON.stringify({ code, language, stdin })
         });
         const data = await res.json();
-        document.getElementById('output').innerText = data.output;
-        document.getElementById('ai_help').innerText = data.ai_help;
-    }
 
-    async function saveCode() {
-        const code = editor.getValue();
-        const language = document.getElementById('language').value;
-        const filename = prompt("Enter filename:", "project_code");
+        const hasError = data.output && /error|traceback|exception/i.test(data.output);
+        outEl.className   = hasError ? 'err' : '';
+        outEl.textContent = data.output || '(no output)';
+        aiEl.textContent  = data.ai_help || 'No suggestions returned.';
 
-        if (filename) {
-            const res = await fetch('/save', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ code, language, filename })
-            });
-            const data = await res.json();
-            alert(data.message);
-        }
+    } catch (err) {
+        outEl.className   = 'err';
+        outEl.textContent = 'Network error: ' + err.message;
+        aiEl.textContent  = '';
+    } finally {
+        runBtn.disabled  = false;
+        runBtn.innerHTML = '<svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M5 3l14 9-14 9V3z"/></svg> Run &amp; Explain';
     }
+}
+
+/* ── Save ── */
+async function saveCode() {
+    const code     = editor.getValue();
+    const language = document.getElementById('language').value;
+    const filename = prompt("Filename:", "my_code");
+    if (!filename) return;
+
+    const res  = await fetch('/save', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ code, language, filename })
+    });
+    const data = await res.json();
+    alert(data.message);
+}
 </script>
 {% endblock %}

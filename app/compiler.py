@@ -33,29 +33,40 @@ def index():
 @compiler.route('/run', methods=['POST'])
 def run_code():
     data = request.json
-    code, lang = data.get('code'), data.get('language')
+    code  = data.get('code', '')
+    lang  = data.get('language', 'python')
+    stdin = data.get('stdin', '')   # user-provided program input
     output = ""
-    
+
     # 1. RUN CODE LOGIC
     try:
         if lang == 'python':
-            result = subprocess.run(['python', '-c', code], capture_output=True, text=True, timeout=5)
+            result = subprocess.run(
+                ['python', '-c', code],
+                input=stdin, capture_output=True, text=True, timeout=10
+            )
             output = result.stdout if result.returncode == 0 else result.stderr
         elif lang == 'c':
             with open('test.c', 'w') as f: f.write(code)
             comp = subprocess.run([GCC_PATH, 'test.c', '-o', 'out.exe'], capture_output=True, text=True)
-            if comp.returncode != 0: 
+            if comp.returncode != 0:
                 output = comp.stderr
             else:
-                res = subprocess.run(['out.exe'], capture_output=True, text=True, timeout=5)
+                res = subprocess.run(
+                    ['out.exe'],
+                    input=stdin, capture_output=True, text=True, timeout=10
+                )
                 output = res.stdout if res.returncode == 0 else res.stderr
         elif lang == 'java':
             with open('Main.java', 'w') as f: f.write(code)
             comp = subprocess.run([JAVAC_PATH, 'Main.java'], capture_output=True, text=True)
-            if comp.returncode != 0: 
+            if comp.returncode != 0:
                 output = comp.stderr
             else:
-                res = subprocess.run([JAVA_PATH, 'Main'], capture_output=True, text=True, timeout=5)
+                res = subprocess.run(
+                    [JAVA_PATH, 'Main'],
+                    input=stdin, capture_output=True, text=True, timeout=10
+                )
                 output = res.stdout if res.returncode == 0 else res.stderr
     except Exception as e:
         output = str(e)

@@ -1,11 +1,24 @@
 {% extends "base.html" %}
 {% block content %}
+<div class="auth-shell">
 <div class="auth-box">
-    <h2>Student Login</h2>
+    <h2>Welcome back to <span>AI Compiler</span></h2>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for cat, msg in messages %}
+            <div class="flash-msg {{ cat }}">{{ msg }}</div>
+        {% endfor %}
+    {% endwith %}
+
     <form method="POST">
-        <input type="text" name="username" placeholder="Username" required>
-        <input type="password" name="password" placeholder="Password" required>
-        <button type="submit">Login</button>
+        <input class="auth-input" type="text"     name="username" placeholder="Username" required autofocus>
+        <input class="auth-input" type="password" name="password" placeholder="Password" required>
+        <button type="submit" class="auth-btn">Sign In</button>
     </form>
+
+    <div class="auth-footer">
+        Don't have an account? <a href="{{ url_for('auth.register') }}">Create one</a>
+    </div>
+</div>
 </div>
 {% endblock %}

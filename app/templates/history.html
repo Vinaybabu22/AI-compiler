@@ -1,56 +1,31 @@
 {% extends "base.html" %}
-
 {% block content %}
+<div class="history-shell">
 <div class="history-container">
-    <h2><i class="fas fa-history"></i> My Saved Projects</h2>
-    <p>Below is a list of all the code snippets you have saved to the database.</p>
-    
-    <table class="history-table" border="1" style="width:100%; border-collapse: collapse; text-align: left;">
-        <thead>
-            <tr style="background-color: #f2f2f2;">
-                <th style="padding: 12px;">Filename</th>
-                <th style="padding: 12px;">Language</th>
-                <th style="padding: 12px;">Date Saved</th>
-                <th style="padding: 12px;">Action</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for code in codes %}
-            <tr>
-                <td style="padding: 10px;">{{ code.filename }}</td>
-                <td style="padding: 10px;"><span class="badge">{{ code.language }}</span></td>
-                <td style="padding: 10px;">{{ code.timestamp.strftime('%Y-%m-%d %H:%M') }}</td>
-                <td style="padding: 10px;">
-                    <button onclick="loadCode('{{ code.id }}')" style="cursor:pointer; background-color: #007bff; color: white; border: none; padding: 5px 10px; border-radius: 4px;">
-                        Open in Editor
-                    </button>
-                </td>
-            </tr>
-            {% else %}
-            <tr>
-                <td colspan="4" style="padding: 20px; text-align: center;">No saved codes found. Start coding and click "Save"!</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
 
-    <div style="margin-top: 20px;">
-        <a href="{{ url_for('compiler.index') }}" class="btn-back">← Back to Compiler</a>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+        <div class="history-title">Saved Code</div>
+        <a href="{{ url_for('compiler.index') }}" style="font-size:12px;color:var(--text-3);text-decoration:none;">
+            ← Back to Editor
+        </a>
     </div>
+
+    <div class="history-grid">
+        {% for code in codes %}
+        <div class="history-card">
+            <div>
+                <div class="history-card-name">{{ code.filename }}</div>
+                <div class="history-card-meta">{{ code.language }} · {{ code.timestamp.strftime('%b %d, %Y  %H:%M') }}</div>
+            </div>
+            <a href="/?load={{ code.id }}" class="history-card-load">Open in Editor</a>
+        </div>
+        {% else %}
+        <div style="text-align:center;padding:60px 0;color:var(--text-3);font-size:13px;">
+            No saved code yet. Write something and click <strong>Save</strong>.
+        </div>
+        {% endfor %}
+    </div>
+
 </div>
-
-<script>
-function loadCode(codeId) {
-    // Redirects to the main page with a 'load' parameter in the URL
-    // Your main compiler page will look for this ID and fill the editor
-    window.location.href = "{{ url_for('compiler.index') }}?load=" + codeId;
-}
-</script>
-
-<style>
-    .history-container { padding: 20px; max-width: 900px; margin: auto; }
-    .history-table { margin-top: 20px; font-family: Arial, sans-serif; }
-    .badge { background: #e9ecef; padding: 2px 8px; border-radius: 10px; font-size: 0.9em; }
-    .btn-back { text-decoration: none; color: #007bff; font-weight: bold; }
-</style>
+</div>
 {% endblock %}
