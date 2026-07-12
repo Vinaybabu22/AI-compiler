@@ -11,9 +11,11 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/display/activeline.min.js"></script>
 
 <style>
-/* Force CodeMirror to fill the editor pane fully */
-.editor-pane .CodeMirror,
-.editor-pane .CodeMirror-scroll { height: 100% !important; }
+    /* Force CodeMirror to fill the editor pane fully */
+    .editor-pane .CodeMirror,
+    .editor-pane .CodeMirror-scroll {
+        height: 100% !important;
+    }
 </style>
 
 <div class="ide-shell">
@@ -28,12 +30,18 @@
         </select>
 
         <button id="runBtn" class="btn-run" onclick="runCode()">
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M5 3l14 9-14 9V3z"/></svg>
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M5 3l14 9-14 9V3z" />
+            </svg>
             Run &amp; Explain
         </button>
 
         <button class="btn-save" onclick="saveCode()">
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z" />
+                <polyline points="17 21 17 13 7 13 7 21" />
+                <polyline points="7 3 7 8 15 8" />
+            </svg>
             Save
         </button>
 
@@ -65,7 +73,8 @@
                         <span class="pane-title">Input</span>
                     </div>
                     <div class="io-body">
-                        <textarea id="stdin" placeholder="Type program input here…&#10;(values for input() / scanf / Scanner)"></textarea>
+                        <textarea id="stdin"
+                            placeholder="Type program input here…&#10;(values for input() / scanf / Scanner)"></textarea>
                     </div>
                 </div>
 
@@ -92,10 +101,11 @@
                 <div id="ai_help">
                     <div class="ai-empty">
                         <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" stroke-width="1.2">
-                            <path d="M12 2a5 5 0 015 5c0 2.76-2.24 5-5 5S7 9.76 7 7a5 5 0 015-5z"/>
-                            <path d="M3 21c0-4.42 4.03-8 9-8s9 3.58 9 8"/>
+                            <path d="M12 2a5 5 0 015 5c0 2.76-2.24 5-5 5S7 9.76 7 7a5 5 0 015-5z" />
+                            <path d="M3 21c0-4.42 4.03-8 9-8s9 3.58 9 8" />
                         </svg>
-                        <p style="font-size:12px;line-height:1.6;">Run your code to get AI analysis, time complexity, and fix suggestions.</p>
+                        <p style="font-size:12px;line-height:1.6;">Run your code to get AI analysis, time complexity,
+                            and fix suggestions.</p>
                     </div>
                 </div>
             </div>
@@ -105,113 +115,113 @@
 </div>
 
 <script>
-let editor;
-let insertMode = false;
+    let editor;
+    let insertMode = false;
 
-document.addEventListener("DOMContentLoaded", function () {
-    const langSelect = document.getElementById('language');
-    const langLabel  = document.getElementById('langLabel');
+    document.addEventListener("DOMContentLoaded", function () {
+        const langSelect = document.getElementById('language');
+        const langLabel = document.getElementById('langLabel');
 
-    function getMode(lang) {
-        if (lang === 'c')    return 'text/x-csrc';
-        if (lang === 'java') return 'text/x-java';
-        return 'python';
+        function getMode(lang) {
+            if (lang === 'c') return 'text/x-csrc';
+            if (lang === 'java') return 'text/x-java';
+            return 'python';
+        }
+
+        editor = CodeMirror.fromTextArea(document.getElementById('code'), {
+            mode: getMode(langSelect.value),
+            theme: "neural",
+            lineNumbers: true,
+            autoCloseBrackets: true,
+            matchBrackets: true,
+            indentUnit: 4,
+            smartIndent: true,
+            tabSize: 4,
+            indentWithTabs: false,
+            cursorBlinkRate: 500,
+            styleActiveLine: true,
+            lineWrapping: false
+        });
+
+        editor.setSize("100%", "100%");
+
+        langSelect.addEventListener('change', function () {
+            const lang = this.value;
+            editor.setOption('mode', getMode(lang));
+            langLabel.textContent = lang;
+        });
+
+        /* Insert key: toggle cursor mode */
+        editor.on('keydown', function (cm, e) {
+            if (e.key === 'Insert') {
+                insertMode = !insertMode;
+                const wrap = editor.getWrapperElement();
+                const badge = document.getElementById('cursorBadge');
+                wrap.classList.toggle('insert-mode', insertMode);
+                badge.textContent = insertMode ? 'INSERT' : 'NORMAL';
+                badge.classList.toggle('insert', insertMode);
+                e.preventDefault();
+            }
+        });
+
+        editor.focus();
+    });
+
+    /* ── Run ── */
+    async function runCode() {
+        const code = editor.getValue();
+        const language = document.getElementById('language').value;
+        const stdin = document.getElementById('stdin').value;
+
+        const runBtn = document.getElementById('runBtn');
+        runBtn.disabled = true;
+        runBtn.innerHTML = '<span class="spinner"></span>Running…';
+
+        const outEl = document.getElementById('output');
+        const aiEl = document.getElementById('ai_help');
+
+        outEl.style.color = '#3f4f6a';
+        outEl.textContent = '';
+        outEl.className = '';
+        aiEl.innerHTML = '<div style="color:#475569;font-size:13px;padding:4px 0;"><span class="spinner"></span>Analyzing…</div>';
+
+        try {
+            const res = await fetch('/run', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ code, language, stdin })
+            });
+            const data = await res.json();
+
+            const hasError = data.output && /error|traceback|exception/i.test(data.output);
+            outEl.className = hasError ? 'err' : '';
+            outEl.textContent = data.output || '(no output)';
+            aiEl.textContent = data.ai_help || 'No suggestions returned.';
+
+        } catch (err) {
+            outEl.className = 'err';
+            outEl.textContent = 'Network error: ' + err.message;
+            aiEl.textContent = '';
+        } finally {
+            runBtn.disabled = false;
+            runBtn.innerHTML = '<svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M5 3l14 9-14 9V3z"/></svg> Run &amp; Explain';
+        }
     }
 
-    editor = CodeMirror.fromTextArea(document.getElementById('code'), {
-        mode:               getMode(langSelect.value),
-        theme:              "neural",
-        lineNumbers:        true,
-        autoCloseBrackets:  true,
-        matchBrackets:      true,
-        indentUnit:         4,
-        smartIndent:        true,
-        tabSize:            4,
-        indentWithTabs:     false,
-        cursorBlinkRate:    500,
-        styleActiveLine:    true,
-        lineWrapping:       false
-    });
+    /* ── Save ── */
+    async function saveCode() {
+        const code = editor.getValue();
+        const language = document.getElementById('language').value;
+        const filename = prompt("Filename:", "my_code");
+        if (!filename) return;
 
-    editor.setSize("100%", "100%");
-
-    langSelect.addEventListener('change', function () {
-        const lang = this.value;
-        editor.setOption('mode', getMode(lang));
-        langLabel.textContent = lang;
-    });
-
-    /* Insert key: toggle cursor mode */
-    editor.on('keydown', function (cm, e) {
-        if (e.key === 'Insert') {
-            insertMode = !insertMode;
-            const wrap  = editor.getWrapperElement();
-            const badge = document.getElementById('cursorBadge');
-            wrap.classList.toggle('insert-mode', insertMode);
-            badge.textContent = insertMode ? 'INSERT' : 'NORMAL';
-            badge.classList.toggle('insert', insertMode);
-            e.preventDefault();
-        }
-    });
-
-    editor.focus();
-});
-
-/* ── Run ── */
-async function runCode() {
-    const code     = editor.getValue();
-    const language = document.getElementById('language').value;
-    const stdin    = document.getElementById('stdin').value;
-
-    const runBtn = document.getElementById('runBtn');
-    runBtn.disabled  = true;
-    runBtn.innerHTML = '<span class="spinner"></span>Running…';
-
-    const outEl = document.getElementById('output');
-    const aiEl  = document.getElementById('ai_help');
-
-    outEl.style.color  = '#3f4f6a';
-    outEl.textContent  = '';
-    outEl.className    = '';
-    aiEl.innerHTML     = '<div style="color:#475569;font-size:13px;padding:4px 0;"><span class="spinner"></span>Analyzing…</div>';
-
-    try {
-        const res  = await fetch('/run', {
-            method:  'POST',
+        const res = await fetch('/save', {
+            method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body:    JSON.stringify({ code, language, stdin })
+            body: JSON.stringify({ code, language, filename })
         });
         const data = await res.json();
-
-        const hasError = data.output && /error|traceback|exception/i.test(data.output);
-        outEl.className   = hasError ? 'err' : '';
-        outEl.textContent = data.output || '(no output)';
-        aiEl.textContent  = data.ai_help || 'No suggestions returned.';
-
-    } catch (err) {
-        outEl.className   = 'err';
-        outEl.textContent = 'Network error: ' + err.message;
-        aiEl.textContent  = '';
-    } finally {
-        runBtn.disabled  = false;
-        runBtn.innerHTML = '<svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M5 3l14 9-14 9V3z"/></svg> Run &amp; Explain';
+        alert(data.message);
     }
-}
-
-/* ── Save ── */
-async function saveCode() {
-    const code     = editor.getValue();
-    const language = document.getElementById('language').value;
-    const filename = prompt("Filename:", "my_code");
-    if (!filename) return;
-
-    const res  = await fetch('/save', {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ code, language, filename })
-    });
-    const data = await res.json();
-    alert(data.message);
-}
 </script>
 {% endblock %}
