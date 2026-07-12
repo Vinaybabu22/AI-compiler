@@ -3,3 +3,11 @@ venv
 code_analysis_report.md
 compilers
 app/__pycache__
+
+# Temporary compiler files
+out.exe
+Main.java
+Main.class
+test.c
+*.class
+*.exe
